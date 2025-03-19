@@ -1,0 +1,11 @@
+# Visual Studio temp files
+.vs/
+*.user
+*.suo
+*.bak
+
+# Node.js (future-proofing)
+node_modules/
+
+# Local caches
+*.cache
