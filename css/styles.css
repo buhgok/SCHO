@@ -1,5 +1,304 @@
+/* Base styles inspired by RSI */
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin-top: 50px;
+    font-family: 'Eurostile', 'EuroStyle Normal', 'Arial', sans-serif;
+    margin: 0;
+    padding: 20px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+    /* Light mode */
+    body.light {
+        background-color: #f5f6f5;
+        color: #1a1a1a;
+    }
+
+    /* Dark mode (default) */
+    body.dark {
+        background-color: #1a2526;
+        color: #d3d3d3;
+    }
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 2em;
+    margin: 0;
+    color: inherit;
+}
+
+h2 {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    color: inherit;
+}
+
+/* Buttons in header */
+#theme-toggle {
+    padding: 5px 10px;
+    margin-left: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Eurostile', 'Arial', sans-serif;
+}
+
+body.dark #theme-toggle {
+    background-color: #ffffff;
+    color: #1a2526;
+}
+
+body.light #theme-toggle {
+    background-color: #3a4a4b;
+    color: #ffffff;
+}
+
+#theme-toggle:hover {
+    opacity: 0.9;
+}
+
+#reset-all {
+    padding: 5px 10px;
+    margin-left: 10px;
+    background-color: #7b00d4;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-family: 'Eurostile', 'Arial', sans-serif;
+}
+
+    #reset-all:hover {
+        background-color: #5e00a3;
+    }
+
+/* Tab styling */
+#tabs {
+    margin-bottom: 0;
+    position: relative;
+    z-index: 2; /* Tabs in front */
+}
+
+.tab-button {
+    padding: 10px 20px;
+    background-color: #3a4a4b;
+    color: #d3d3d3;
+    border: 4px solid transparent;
+    cursor: pointer;
+    font-family: 'Eurostile', 'Arial', sans-serif;
+}
+
+body.light .tab-button {
+    background-color: #e0e0e0;
+    color: #1a1a1a;
+}
+
+.tab-button.active {
+    background-color: #00b8d4;
+    color: white;
+    border: 4px solid #ff6200; /* RSI orange */
+}
+
+.tab-button:hover {
+    background-color: #00b8d4;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    position: relative;
+    z-index: 1; /* Card behind tabs */
+}
+
+    .tab-content.active {
+        display: block;
+    }
+
+.tab-card {
+    border: 4px solid transparent;
+    padding: 15px;
+    background-color: #2e3839;
+    margin-top: 0; /* No overlap, sits below tabs */
+}
+
+body.light .tab-card {
+    background-color: #ffffff;
+}
+
+.tab-content.active .tab-card {
+    border-color: #ff6200; /* RSI orange */
+}
+
+/* Form styling */
+#contract-form .form-grid {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 10px;
+}
+
+#contract-form label, #location-form label, #route label {
+    display: flex;
+    flex-direction: column;
+    color: inherit;
+    gap: 5px;
+}
+
+#contract-form button, #route button {
+    justify-self: start;
+}
+
+#contract-form input, #contract-form select, #location-form input, #route input {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #3a4a4b;
+    background-color: #2e3839;
+    color: #d3d3d3;
+    font-family: 'Eurostile', 'Arial', sans-serif;
+    box-sizing: border-box;
+}
+
+body.light #contract-form input, body.light #contract-form select, body.light #location-form input, body.light #route input {
+    background-color: #ffffff;
+    color: #1a1a1a;
+    border: 1px solid #cccccc;
+}
+
+#contract-form button, #location-form button, #route button {
+    padding: 5px 10px;
+    background-color: #00d400;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-family: 'Eurostile', 'Arial', sans-serif;
+}
+
+    #contract-form button:hover, #location-form button:hover, #route button:hover {
+        background-color: #00a300;
+    }
+
+.cargo-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: flex-end;
+}
+
+    .cargo-item label {
+        flex: 1;
+        min-width: 120px;
+    }
+
+.remove-cargo {
+    background-color: #f44336;
+    height: 30px;
+    align-self: flex-end;
+}
+
+    .remove-cargo:hover {
+        background-color: #d32f2f;
+    }
+
+.route-start {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 10px;
+}
+
+    .route-start label {
+        flex: 1;
+    }
+
+#set-start {
+    height: 30px;
+}
+
+/* Contracts and Locations table styling */
+#contract-table, #location-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #2e3839;
+}
+
+body.light #contract-table, body.light #location-table {
+    background-color: #ffffff;
+}
+
+#contract-table th, #contract-table td, #location-table th, #location-table td {
+    border: 1px solid #3a4a4b;
+    padding: 8px;
+    text-align: left;
+    color: inherit;
+}
+
+body.light #contract-table th, body.light #contract-table td, body.light #location-table th, body.light #location-table td {
+    border: 1px solid #cccccc;
+}
+
+#contract-table th, #location-table th {
+    background-color: #3a4a4b;
+}
+
+body.light #contract-table th, body.light #location-table th {
+    background-color: #e0e0e0;
+}
+
+/* Route table styling */
+#route-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background-color: #2e3839;
+}
+
+body.light #route-table {
+    background-color: #ffffff;
+}
+
+#route-table th, #route-table td {
+    border: 1px solid #3a4a4b;
+    padding: 8px;
+    text-align: left;
+    color: inherit;
+}
+
+body.light #route-table th, body.light #route-table td {
+    border: 1px solid #cccccc;
+}
+
+#route-table th {
+    background-color: #3a4a4b;
+}
+
+body.light #route-table th {
+    background-color: #e0e0e0;
+}
+
+/* Action buttons */
+button.edit, button.delete {
+    padding: 5px;
+    margin-right: 5px;
+    cursor: pointer;
+    font-family: 'Eurostile', 'Arial', sans-serif;
+}
+
+button.edit {
+    background-color: #00b8d4;
+    color: white;
+}
+
+button.delete {
+    background-color: #f44336;
+    color: white;
+}
+
+button.edit:hover {
+    background-color: #0097a7;
+}
+
+button.delete:hover {
+    background-color: #d32f2f;
 }

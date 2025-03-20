@@ -2,12 +2,132 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SCHO - Star Citizen Hauling Optimizer</title>
-    <link rel="stylesheet" href="../css/styles.css"> <!-- If you add CSS -->
+    <title>Star Citizen Hauling Tracker</title>
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
-<body>
-    <h1>SCHO</h1>
-    <div id="app">Loading...</div>
+<body class="dark">
+    <header>
+        <h1>Star Citizen Hauling Tracker</h1>
+        <div>
+            <button id="theme-toggle">Light Mode</button>
+            <button id="reset-all">Reset All</button>
+        </div>
+    </header>
+
+    <div id="tabs">
+        <button class="tab-button active" onclick="openTab('contracts-tab')">Contracts</button>
+        <button class="tab-button" onclick="openTab('route-tab')">Route</button>
+        <button class="tab-button" onclick="openTab('locations-tab')">Locations</button>
+        <button class="tab-button" onclick="openTab('session-tab')">Session</button>
+    </div>
+
+    <div id="contracts-tab" class="tab-content active">
+        <div class="tab-card">
+            <section id="contract-input">
+                <h2>Add Contract</h2>
+                <form id="contract-form">
+                    <div class="form-grid">
+                        <label>Contract Name: <input type="text" id="name" required></label>
+                        <label>Ship: <select id="ship" required></select></label>
+                        <label>Reward (aUEC): <input type="number" id="reward" min="1" required></label>
+                    </div>
+                    <h3>Cargo Items</h3>
+                    <div id="cargo-items">
+                        <div class="cargo-item">
+                            <label>Material: <input type="text" class="material" required></label>
+                            <label>Pickup: <input type="text" class="pickup" list="pickup-list" required></label>
+                            <label>Delivery: <input type="text" class="delivery" list="delivery-list" required></label>
+                            <label>Cargo Size (SCU): <input type="number" class="cargo" min="1" required></label>
+                            <label>
+                                Max Container (SCU):
+                                <select class="max-container" required>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="4">4</option>
+                                    <option value="8">8</option>
+                                    <option value="16">16</option>
+                                    <option value="32">32</option>
+                                    <option value="64">64</option>
+                                </select>
+                            </label>
+                            <button type="button" class="remove-cargo">Remove</button>
+                        </div>
+                    </div>
+                    <button type="button" id="add-cargo">Add Cargo Item</button>
+                    <button type="submit">Add Contract</button>
+                    <datalist id="pickup-list"></datalist>
+                    <datalist id="delivery-list"></datalist>
+                </form>
+            </section>
+
+            <section id="contracts">
+                <h2>Contracts</h2>
+                <table id="contract-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Cargo Details</th>
+                            <th>Reward (aUEC)</th>
+                            <th>Status</th>
+                            <th>Ship</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contract-list"></tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <div id="route-tab" class="tab-content">
+        <div class="tab-card">
+            <section id="route">
+                <h2>Optimized Route</h2>
+                <div class="route-start">
+                    <label>Starting Location: <input type="text" id="start-location" list="pickup-list"></label>
+                    <button type="button" id="calculate-route">Calculate Route</button>
+                </div>
+                <div id="route-output"></div>
+            </section>
+        </div>
+    </div>
+
+    <div id="locations-tab" class="tab-content">
+        <div class="tab-card">
+            <section id="locations">
+                <h2>Manage Locations</h2>
+                <form id="location-form">
+                    <label>Add New Location: <input type="text" id="new-location" placeholder="e.g., Stanton: New Depot"></label>
+                    <button type="submit">Add</button>
+                </form>
+                <table id="location-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="location-list"></tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <div id="session-tab" class="tab-content">
+        <div class="tab-card">
+            <section id="session">
+                <h2>Session Summary</h2>
+                <div id="session-output"></div>
+            </section>
+        </div>
+    </div>
+
     <script src="../src/script.js"></script>
+    <script>
+        // Fallback to confirm script.js loaded
+        if (typeof openTab === 'undefined') {
+            alert('Error: script.js failed to load. Check console (F12) and path ../src/script.js');
+        }
+    </script>
 </body>
 </html>
