@@ -299,16 +299,12 @@ function updateRoute() {
     const startLocation = document.getElementById("start-location").value.trim();
     const activeContracts = contracts.filter(c => c.status === "Pending" || c.status === "Enroute");
 
-    console.log("updateRoute started", { startLocation, activeContractsLength: activeContracts.length });
-
     if (!startLocation) {
         routeOutput.innerHTML = "Please set a starting location.";
-        console.log("No start location set");
         return;
     }
     if (activeContracts.length === 0) {
         routeOutput.innerHTML = "No active contracts.";
-        console.log("No active contracts");
         return;
     }
 
@@ -325,7 +321,6 @@ function updateRoute() {
             });
         });
     });
-    console.log("Cargo tasks gathered", cargoTasks);
 
     let route = [];
     let currentLocation = startLocation;
@@ -343,35 +338,33 @@ function updateRoute() {
     }
 
     while (visitedPickups.size < cargoTasks.length || cargoOnBoard.length > 0) {
-        console.log("Loop iteration", { currentLocation, visitedPickups: visitedPickups.size, cargoOnBoard: cargoOnBoard.length });
-        let actions = [];
+        let startActions = [];
+        let endActions = [];
         let currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
 
-        // Deliver anything we can at current location
+        // Deliveries at current (start) location
         const deliveriesHere = cargoOnBoard.filter(t => t.delivery === currentLocation);
         if (deliveriesHere.length > 0) {
-            actions.push(...deliveriesHere.map(t => `Deliver ${t.material} (${t.scu} SCU)`));
+            startActions.push(...deliveriesHere.map(t => `Deliver ${t.material} (${t.scu} SCU)`));
             cargoOnBoard = cargoOnBoard.filter(t => t.delivery !== currentLocation);
             currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
         }
 
-        // Pick up anything available here if capacity allows
+        // Pickups at current (start) location
         const pickupsHere = cargoTasks.filter(t => t.pickup === currentLocation && !visitedPickups.has(t));
         for (const task of pickupsHere) {
             if (currentSCU + task.scu <= shipCapacity) {
-                actions.push(`Pick up ${task.material} (${task.scu} SCU)`);
+                startActions.push(`Pick up ${task.material} (${task.scu} SCU)`);
                 cargoOnBoard.push(task);
                 visitedPickups.add(task);
                 currentSCU += task.scu;
             }
         }
-        console.log("Actions at current location", { actions, currentSCU });
 
         // Decide next stop
         const unvisitedPickups = cargoTasks.filter(t => !visitedPickups.has(t)).map(t => t.pickup);
         const pendingDeliveries = cargoOnBoard.map(t => t.delivery);
         const nextCandidates = [...new Set([...unvisitedPickups, ...pendingDeliveries])];
-        console.log("Next candidates", nextCandidates);
 
         let nextLocation = currentLocation;
         if (nextCandidates.length > 0) {
@@ -379,25 +372,43 @@ function updateRoute() {
                 const dist = getDistance(currentLocation, loc);
                 return dist < getDistance(currentLocation, closest) ? loc : closest;
             }, nextCandidates[0]);
-        } else if (actions.length === 0) {
-            console.log("No more tasks, breaking loop");
+        } else if (startActions.length === 0) {
             break;
         }
 
-        // Add leg only if there's a change or action
+        // Deliveries at next (end) location
+        const deliveriesNext = cargoOnBoard.filter(t => t.delivery === nextLocation);
+        if (deliveriesNext.length > 0) {
+            endActions.push(...deliveriesNext.map(t => `Deliver ${t.material} (${t.scu} SCU)`));
+            cargoOnBoard = cargoOnBoard.filter(t => t.delivery !== nextLocation);
+            currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
+        }
+
+        // Pickups at next (end) location
+        const pickupsNext = cargoTasks.filter(t => t.pickup === nextLocation && !visitedPickups.has(t));
+        for (const task of pickupsNext) {
+            if (currentSCU + task.scu <= shipCapacity) {
+                endActions.push(`Pick up ${task.material} (${task.scu} SCU)`);
+                cargoOnBoard.push(task);
+                visitedPickups.add(task);
+                currentSCU += task.scu;
+            }
+        }
+
+        // Add leg with separate start and end actions
         const dist = currentLocation === nextLocation ? 0 : getDistance(currentLocation, nextLocation);
-        if (actions.length > 0 || dist > 0) {
+        if (startActions.length > 0 || endActions.length > 0 || dist > 0) {
             route.push({
                 start: currentLocation,
+                startAction: startActions.length > 0 ? startActions.join(", ") : "Depart",
                 end: nextLocation,
-                action: actions.length > 0 ? actions.join(", ") : "Travel",
-                contract: (deliveriesHere[0] || pickupsHere[0])?.contract?.name || "-",
+                endAction: endActions.length > 0 ? endActions.join(", ") : "Arrive",
+                contract: (deliveriesHere[0] || pickupsHere[0] || deliveriesNext[0] || pickupsNext[0])?.contract?.name || "-",
                 distance: dist,
                 fuel: dist / 1000
             });
             totalDistance += dist;
             totalFuel += dist / 1000;
-            console.log("Leg added", route[route.length - 1]);
         }
 
         currentLocation = nextLocation;
@@ -410,6 +421,7 @@ function updateRoute() {
                 <tr>
                     <th>Leg #</th>
                     <th>Start</th>
+                    <th>Action at Start</th>
                     <th>End</th>
                     <th>Action at End</th>
                     <th>Contract</th>
@@ -425,8 +437,9 @@ function updateRoute() {
             <tr>
                 <td>${index + 1}</td>
                 <td>${leg.start}</td>
+                <td>${leg.startAction}</td>
                 <td>${leg.end}</td>
-                <td>${leg.action}</td>
+                <td>${leg.endAction}</td>
                 <td>${leg.contract}</td>
                 <td>${leg.distance}</td>
                 <td>${leg.fuel}</td>
@@ -440,7 +453,6 @@ function updateRoute() {
         <p>Total Distance: ${totalDistance} km | Total Fuel: ${totalFuel}</p>
     `;
     routeOutput.innerHTML = tableHTML;
-    console.log("Route output updated", { totalDistance, totalFuel });
 }
 
 function updateSession() {
