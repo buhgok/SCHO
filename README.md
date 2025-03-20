@@ -13,7 +13,7 @@ This app helps players plan efficient trade routes by calculating legs, distance
 - Persistent data via localStorage.
 
 ## Installation
-1. Clone the repo: `git clone [your-repo-url]`
+1. Clone the repo: `git clone https://github.com/buhgok/SCHOT.git`
 2. Open `html/index.html` in a browser—no server needed!
 
 ## Usage
@@ -61,5 +61,3 @@ Leg # | Start | Action at Start | End | Action at End | Contract | Distance (km)
 - Report bugs or suggest features via [Issues]([your-repo-url]/issues).
 - Pull requests welcome—keep it simple and test before submitting.
 
-## License
-[MIT License](LICENSE) - Free to use, modify, and distribute.
