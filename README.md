@@ -58,6 +58,6 @@ Leg # | Start | Action at Start | End | Action at End | Contract | Distance (km)
 - Todo: Add real distances, multi-ship support.
 
 ## Contributing
-- Report bugs or suggest features via [Issues]([your-repo-url]/issues).
+- Report bugs or suggest features via [Issues](https://github.com/buhgok/SCHOT/issues).
 - Pull requests welcome—keep it simple and test before submitting.
 
