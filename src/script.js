@@ -113,6 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         calculateRouteButton.addEventListener("click", () => {
+            console.log("Calculate Route button clicked!");
             updateRoute();
         });
 
@@ -193,7 +194,7 @@ function updateTable() {
     tbody.innerHTML = "";
 
     contracts.forEach((contract, index) => {
-        const cargoDetails = contract.cargoItems.map(item => 
+        const cargoDetails = contract.cargoItems.map(item =>
             `${item.material}: ${item.cargo} SCU (${item.pickup} → ${item.delivery})`
         ).join("<br>");
         const row = document.createElement("tr");
@@ -224,7 +225,7 @@ function editContract(index) {
     document.getElementById("name").value = contract.name;
     document.getElementById("ship").value = contract.ship;
     document.getElementById("reward").value = contract.reward;
-    
+
     const cargoItemsDiv = document.getElementById("cargo-items");
     cargoItemsDiv.innerHTML = "";
     contract.cargoItems.forEach(item => {
@@ -298,12 +299,16 @@ function updateRoute() {
     const startLocation = document.getElementById("start-location").value.trim();
     const activeContracts = contracts.filter(c => c.status === "Pending" || c.status === "Enroute");
 
+    console.log("updateRoute started", { startLocation, activeContractsLength: activeContracts.length });
+
     if (!startLocation) {
         routeOutput.innerHTML = "Please set a starting location.";
+        console.log("No start location set");
         return;
     }
     if (activeContracts.length === 0) {
         routeOutput.innerHTML = "No active contracts.";
+        console.log("No active contracts");
         return;
     }
 
@@ -320,6 +325,7 @@ function updateRoute() {
             });
         });
     });
+    console.log("Cargo tasks gathered", cargoTasks);
 
     let route = [];
     let currentLocation = startLocation;
@@ -337,9 +343,9 @@ function updateRoute() {
     }
 
     while (visitedPickups.size < cargoTasks.length || cargoOnBoard.length > 0) {
+        console.log("Loop iteration", { currentLocation, visitedPickups: visitedPickups.size, cargoOnBoard: cargoOnBoard.length });
         let actions = [];
         let currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
-        let nextLocation = currentLocation;
 
         // Deliver anything we can at current location
         const deliveriesHere = cargoOnBoard.filter(t => t.delivery === currentLocation);
@@ -359,24 +365,28 @@ function updateRoute() {
                 currentSCU += task.scu;
             }
         }
+        console.log("Actions at current location", { actions, currentSCU });
 
-        // Decide next stop: nearest unvisited pickup or pending delivery
+        // Decide next stop
         const unvisitedPickups = cargoTasks.filter(t => !visitedPickups.has(t)).map(t => t.pickup);
         const pendingDeliveries = cargoOnBoard.map(t => t.delivery);
         const nextCandidates = [...new Set([...unvisitedPickups, ...pendingDeliveries])];
+        console.log("Next candidates", nextCandidates);
 
+        let nextLocation = currentLocation;
         if (nextCandidates.length > 0) {
             nextLocation = nextCandidates.reduce((closest, loc) => {
                 const dist = getDistance(currentLocation, loc);
                 return dist < getDistance(currentLocation, closest) ? loc : closest;
             }, nextCandidates[0]);
         } else if (actions.length === 0) {
-            break; // Nothing left to do
+            console.log("No more tasks, breaking loop");
+            break;
         }
 
-        // Add the leg with travel and actions combined
+        // Add leg only if there's a change or action
         const dist = currentLocation === nextLocation ? 0 : getDistance(currentLocation, nextLocation);
-        if (actions.length > 0 || currentLocation !== nextLocation) {
+        if (actions.length > 0 || dist > 0) {
             route.push({
                 start: currentLocation,
                 end: nextLocation,
@@ -387,6 +397,7 @@ function updateRoute() {
             });
             totalDistance += dist;
             totalFuel += dist / 1000;
+            console.log("Leg added", route[route.length - 1]);
         }
 
         currentLocation = nextLocation;
@@ -429,6 +440,7 @@ function updateRoute() {
         <p>Total Distance: ${totalDistance} km | Total Fuel: ${totalFuel}</p>
     `;
     routeOutput.innerHTML = tableHTML;
+    console.log("Route output updated", { totalDistance, totalFuel });
 }
 
 function updateSession() {
