@@ -34,6 +34,17 @@ const distances = {
     "Pyro: Pyro I Outpost-Pyro: Pyro V Fuel Depot": 300000
 };
 
+// --- Static Material List for Alpha 4.0.2 ---
+const STATIC_MATERIALS = [
+    "Agricium", "Aluminum", "Astatine", "Bexalite", "Copper", "Corundum", "Diamond", "Gold", "Iron", "Quantanium", "Titanium", "Tungsten",
+    "Chlorine", "Fluorine", "Helium", "Hydrogen", "Iodine", "Nitrogen",
+    "Waste", "Scrap", "Recycled Material Composite",
+    "Agricultural Supplies", "Distilled Spirits", "Fresh Food", "Processed Food",
+    "Medical Supplies", "Stims", "SLAM", "WiDoW",
+    "Construction Materials", "Souvenirs", "Steel"
+];
+let materials = JSON.parse(localStorage.getItem("materials")) || [...STATIC_MATERIALS];
+
 function updateDatalist(datalist) {
     datalist.innerHTML = "";
     locations.forEach(loc => datalist.appendChild(createOption(loc)));
@@ -51,6 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const resetButton = document.getElementById("reset-all");
         const addCargoButton = document.getElementById("add-cargo");
         const calculateRouteButton = document.getElementById("calculate-route");
+        const refreshMaterialsButton = document.getElementById("refresh-materials");
 
         const savedTheme = localStorage.getItem("theme") || "dark";
         document.body.className = savedTheme;
@@ -64,6 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
         updateTable();
         updateSession();
         updateLocationTable();
+
+        // --- Populate materials on load ---
+        updateMaterialDropdown();
 
         contractForm.addEventListener("submit", (event) => {
             event.preventDefault();
@@ -86,24 +101,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 contracts = [];
                 sessionCompleted = { count: 0, earnings: 0 };
                 locations = [...locations];
+                materials = [...STATIC_MATERIALS]; // Reset to static list
                 localStorage.setItem("contracts", JSON.stringify(contracts));
                 localStorage.setItem("sessionCompleted", JSON.stringify(sessionCompleted));
                 localStorage.setItem("locations", JSON.stringify(locations));
+                localStorage.setItem("materials", JSON.stringify(materials));
                 updateTable();
                 updateRoute();
                 updateSession();
                 updateLocationTable();
                 updateDatalist(pickupList);
                 updateDatalist(deliveryList);
+                updateMaterialDropdown();
             }
         });
 
         addCargoButton.addEventListener("click", () => {
             const cargoItems = document.getElementById("cargo-items");
             const newItem = cargoItems.children[0].cloneNode(true);
-            newItem.querySelectorAll("input, select").forEach(el => el.value = "");
+            newItem.querySelectorAll("input, select").forEach(el => {
+                if (el.className !== "material") el.value = "";
+            });
             newItem.querySelector(".remove-cargo").addEventListener("click", () => newItem.remove());
             cargoItems.appendChild(newItem);
+            updateMaterialDropdown(newItem.querySelector(".material"));
         });
 
         document.querySelectorAll(".remove-cargo").forEach(btn => {
@@ -115,6 +136,12 @@ document.addEventListener("DOMContentLoaded", () => {
         calculateRouteButton.addEventListener("click", () => {
             console.log("Calculate Route button clicked!");
             updateRoute();
+        });
+
+        refreshMaterialsButton.addEventListener("click", () => {
+            materials = [...STATIC_MATERIALS]; // Reset to static list
+            localStorage.setItem("materials", JSON.stringify(materials));
+            updateMaterialDropdown();
         });
 
         console.log("Initialization complete!");
@@ -129,6 +156,19 @@ function createOption(value) {
     option.value = value;
     option.text = value;
     return option;
+}
+
+function updateMaterialDropdown(dropdown = null) {
+    const targets = dropdown ? [dropdown] : document.querySelectorAll(".material");
+    targets.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Select Material</option>';
+        materials.forEach(mat => {
+            const option = createOption(mat);
+            if (mat === currentValue) option.selected = true;
+            select.appendChild(option);
+        });
+    });
 }
 
 function validateLocation(loc) {
@@ -229,10 +269,14 @@ function editContract(index) {
     const cargoItemsDiv = document.getElementById("cargo-items");
     cargoItemsDiv.innerHTML = "";
     contract.cargoItems.forEach(item => {
-        const newItem = cargoItemsDiv.children[0] ? cargoItemsDiv.children[0].cloneNode(true) : document.createElement("div");
+        const newItem = document.createElement("div");
         newItem.className = "cargo-item";
         newItem.innerHTML = `
-            <label>Material: <input type="text" class="material" value="${item.material}" required></label>
+            <label>Material: 
+                <select class="material" required>
+                    <option value="">Select Material</option>
+                </select>
+            </label>
             <label>Pickup: <input type="text" class="pickup" list="pickup-list" value="${item.pickup}" required></label>
             <label>Delivery: <input type="text" class="delivery" list="delivery-list" value="${item.delivery}" required></label>
             <label>Cargo Size (SCU): <input type="number" class="cargo" value="${item.cargo}" min="1" required></label>
@@ -249,8 +293,10 @@ function editContract(index) {
             </label>
             <button type="button" class="remove-cargo">Remove</button>
         `;
+        newItem.querySelector(".material").value = item.material;
         newItem.querySelector(".remove-cargo").addEventListener("click", () => newItem.remove());
         cargoItemsDiv.appendChild(newItem);
+        updateMaterialDropdown(newItem.querySelector(".material"));
     });
 
     contracts.splice(index, 1);
@@ -308,7 +354,6 @@ function updateRoute() {
         return;
     }
 
-    // Gather all cargo tasks
     let cargoTasks = [];
     activeContracts.forEach(contract => {
         contract.cargoItems.forEach(item => {
@@ -328,13 +373,12 @@ function updateRoute() {
     let visitedPickups = new Set();
     let totalDistance = 0;
     let totalFuel = 0;
-    const shipCapacity = ships["Constellation Taurus"].totalSCU; // 174 SCU
+    const shipCapacity = ships["Constellation Taurus"].totalSCU;
 
-    // Helper to get distance between two points
     function getDistance(from, to) {
         const key1 = `${from}-${to}`;
         const key2 = `${to}-${from}`;
-        return distances[key1] || distances[key2] || 100000; // Default 100,000 km if unknown
+        return distances[key1] || distances[key2] || 100000;
     }
 
     while (visitedPickups.size < cargoTasks.length || cargoOnBoard.length > 0) {
@@ -342,7 +386,6 @@ function updateRoute() {
         let endActions = [];
         let currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
 
-        // Deliveries at current (start) location
         const deliveriesHere = cargoOnBoard.filter(t => t.delivery === currentLocation);
         if (deliveriesHere.length > 0) {
             startActions.push(...deliveriesHere.map(t => `Deliver ${t.material} (${t.scu} SCU)`));
@@ -350,18 +393,16 @@ function updateRoute() {
             currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
         }
 
-        // Pickups at current (start) location
         const pickupsHere = cargoTasks.filter(t => t.pickup === currentLocation && !visitedPickups.has(t));
         for (const task of pickupsHere) {
             if (currentSCU + task.scu <= shipCapacity) {
-                startActions.push(`Pick up ${task.material} (${task.scu} SCU)`);
+                startActions.push(`Pick up ${t.material} (${t.scu} SCU)`);
                 cargoOnBoard.push(task);
                 visitedPickups.add(task);
                 currentSCU += task.scu;
             }
         }
 
-        // Decide next stop
         const unvisitedPickups = cargoTasks.filter(t => !visitedPickups.has(t)).map(t => t.pickup);
         const pendingDeliveries = cargoOnBoard.map(t => t.delivery);
         const nextCandidates = [...new Set([...unvisitedPickups, ...pendingDeliveries])];
@@ -376,7 +417,6 @@ function updateRoute() {
             break;
         }
 
-        // Deliveries at next (end) location
         const deliveriesNext = cargoOnBoard.filter(t => t.delivery === nextLocation);
         if (deliveriesNext.length > 0) {
             endActions.push(...deliveriesNext.map(t => `Deliver ${t.material} (${t.scu} SCU)`));
@@ -384,18 +424,16 @@ function updateRoute() {
             currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
         }
 
-        // Pickups at next (end) location
         const pickupsNext = cargoTasks.filter(t => t.pickup === nextLocation && !visitedPickups.has(t));
         for (const task of pickupsNext) {
             if (currentSCU + task.scu <= shipCapacity) {
-                endActions.push(`Pick up ${task.material} (${task.scu} SCU)`);
+                endActions.push(`Pick up ${t.material} (${t.scu} SCU)`);
                 cargoOnBoard.push(task);
                 visitedPickups.add(task);
                 currentSCU += task.scu;
             }
         }
 
-        // Add leg with separate start and end actions
         const dist = currentLocation === nextLocation ? 0 : getDistance(currentLocation, nextLocation);
         if (startActions.length > 0 || endActions.length > 0 || dist > 0) {
             route.push({
@@ -414,7 +452,6 @@ function updateRoute() {
         currentLocation = nextLocation;
     }
 
-    // Generate table
     let tableHTML = `
         <table id="route-table">
             <thead>
