@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SCHOT - Star Citizen Hauling Optimization Tool</title>
-    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="dark">
     <header>
@@ -16,10 +16,10 @@
     </header>
     <main>
         <div class="tabs">
-            <button class="tab-button active" onclick="openTab('contracts')">Contracts</button>
-            <button class="tab-button" onclick="openTab('route')">Route</button>
-            <button class="tab-button" onclick="openTab('locations')">Locations</button>
-            <button class="tab-button" onclick="openTab('session')">Session</button>
+            <button class="tab-button active" id="contracts-tab">Contracts</button>
+            <button class="tab-button" id="route-tab">Route</button>
+            <button class="tab-button" id="locations-tab">Locations</button>
+            <button class="tab-button" id="session-tab">Session</button>
         </div>
         <div id="contracts" class="tab-content active">
             <div class="tab-card">
@@ -108,6 +108,25 @@
             </div>
         </div>
     </main>
-    <script src="../src/script.js"></script>
+    <script src="src/data.js"></script>
+    <script src="src/contracts.js"></script>
+    <script src="src/locations.js"></script>
+    <script src="src/routing.js"></script>
+    <script src="src/ui.js"></script>
+    <script src="src/app.js"></script>
+    <script>
+        // Inline tab switching until we move to full event delegation
+        document.getElementById("contracts-tab").addEventListener("click", () => openTab("contracts"));
+        document.getElementById("route-tab").addEventListener("click", () => openTab("route"));
+        document.getElementById("locations-tab").addEventListener("click", () => openTab("locations"));
+        document.getElementById("session-tab").addEventListener("click", () => openTab("session"));
+
+        function openTab(tabId) {
+            document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+            document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));
+            document.getElementById(tabId).classList.add("active");
+            document.getElementById(`${tabId}-tab`).classList.add("active");
+        }
+    </script>
 </body>
 </html>
