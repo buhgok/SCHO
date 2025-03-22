@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const addCargoButton = document.getElementById("add-cargo");
         const calculateRouteButton = document.getElementById("calculate-route");
         const refreshMaterialsButton = document.getElementById("refresh-materials");
+        const captureScreenshotButton = document.getElementById("capture-screenshot");
 
         // Theme setup
         const savedTheme = localStorage.getItem("theme") || "dark";
@@ -71,6 +72,17 @@ document.addEventListener("DOMContentLoaded", () => {
             data.saveState();
             ui.updateMaterialDropdown();
         });
+
+        // Add event listener for capture-screenshot with debugging
+        if (captureScreenshotButton) {
+            console.log("Capture button found, attaching event listener");
+            captureScreenshotButton.addEventListener("click", () => {
+                console.log("Capture button clicked, calling contracts.captureScreenshot");
+                contracts.captureScreenshot();
+            });
+        } else {
+            console.error("Capture button not found in DOM");
+        }
 
         // Initial cargo item remove button
         document.querySelectorAll(".remove-cargo").forEach(btn => {

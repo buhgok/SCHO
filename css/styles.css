@@ -278,7 +278,7 @@ body.light #route-table th {
 }
 
 /* Action buttons */
-button.edit, button.delete {
+button.edit, button.delete, #capture-screenshot {
     padding: 5px;
     margin-right: 5px;
     cursor: pointer;
@@ -295,10 +295,53 @@ button.delete {
     color: white;
 }
 
+#capture-screenshot {
+    background-color: #ff6200; /* RSI orange */
+    color: white;
+}
+
 button.edit:hover {
     background-color: #0097a7;
 }
 
 button.delete:hover {
     background-color: #d32f2f;
+}
+
+#capture-screenshot:hover {
+    background-color: #e05500;
+}
+
+/* Modal and canvas styles */
+#screenshot-modal button {
+    padding: 5px 10px;
+    margin: 0 5px;
+    cursor: pointer;
+    font-family: 'Eurostile', 'Arial', sans-serif;
+}
+
+#confirm-selection {
+    background-color: #00d400;
+    color: white;
+    border: none;
+}
+
+    #confirm-selection:hover {
+        background-color: #00a300;
+    }
+
+#cancel-selection {
+    background-color: #f44336;
+    color: white;
+    border: none;
+}
+
+    #cancel-selection:hover {
+        background-color: #d32f2f;
+    }
+
+#screenshot-canvas {
+    border: 2px solid #ff6200;
+    max-width: 80vw;
+    max-height: 80vh;
 }
