@@ -119,7 +119,7 @@ async function performOCR(imageUrl) {
         // Preprocess the image before OCR (invert colors for light text on dark background)
         const preprocessedUrl = await preprocessImage(imageUrl, true);
         const { data: { text } } = await Tesseract.recognize(preprocessedUrl, 'eng', {
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,. -', // Whitelist characters
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,. -/'
         });
         console.log("OCR completed:", text);
         return text;
@@ -144,24 +144,97 @@ function parseContractData(extractedData) {
     console.log("Parsed reward:", contractData.reward);
 
     // Parse max container size from details (e.g., "At most the containers will be 4 SCU in size")
-    const detailsText = extractedData.details;
-    console.log("Details text to parse:", detailsText);
-    const maxContainerMatch = detailsText.match(/At most the containers will be (\d+)\s*SCU in size/);
+    let detailsText = extractedData.details;
+    console.log("Raw details text:", detailsText);
+    detailsText = detailsText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    console.log("Normalized details text:", detailsText);
+    const maxContainerMatch = detailsText.match(/At m[ao]st the containers will be (\d+) SCU in size/i);
+    if (!maxContainerMatch) {
+        console.warn("Max container regex did not match. Text:", detailsText);
+    }
     contractData.maxContainer = maxContainerMatch ? parseInt(maxContainerMatch[1], 10) : 1; // Default to 1 if not found
     console.log("Parsed maxContainer:", contractData.maxContainer);
 
-    // Parse cargo items (assumes format: "Collect [material] from [pickup] - Deliver [scu] SCU to [delivery]")
-    const cargoText = extractedData.cargoItems;
-    console.log("Cargo text to parse:", cargoText);
-    const regex = /Collect (\w+) from ([\w\s:-]+)\s*-\s*Deliver (\d+) SCU to ([\w\s:-]+)/g;
+    // Extract the expected delivery location from details (e.g., "microTech Logistics Depot S4LD13")
+    const deliveryMatch = detailsText.match(/freight elevator at (microTech Logistics Depot S4LD13)/i);
+    const expectedDelivery = deliveryMatch ? deliveryMatch[1] : null;
+    console.log("Expected delivery location from details:", expectedDelivery);
+
+    // Parse cargo items
+    let cargoText = extractedData.cargoItems;
+    console.log("Raw cargo text:", cargoText);
+
+    // Preprocess the cargo text to normalize the format
+    // 1. Replace newlines with spaces
+    cargoText = cargoText.replace(/\n/g, ' ');
+    console.log("After replacing newlines:", cargoText);
+
+    // 2. Remove stray symbols (keep only alphanumeric, spaces, colons, hyphens, and slashes)
+    cargoText = cargoText.replace(/[^a-zA-Z0-9\s:\/-]/g, '');
+    console.log("After removing symbols:", cargoText);
+
+    // 3. Remove "PRIMARY OBJECTIVES" header
+    cargoText = cargoText.replace(/PRIMARY OBJECTIVES/, '');
+    console.log("After removing PRIMARY OBJECTIVES:", cargoText);
+
+    // 4. Clean up extra spaces
+    cargoText = cargoText.replace(/\s+/g, ' ').trim();
+    console.log("Preprocessed cargo text:", cargoText);
+
+    // 5. Parse cargo items by splitting into segments
     contractData.cargoItems = [];
-    let match;
-    while ((match = regex.exec(cargoText)) !== null) {
+    // Split the text into segments starting with "Collect"
+    const segments = cargoText.split(/(?=Collect)/);
+    console.log("Text segments:", segments);
+
+    for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i].trim();
+        if (!segment.startsWith("Collect")) continue;
+
+        // Extract the "Collect" part
+        const collectMatch = segment.match(/Collect (\w+) from ([\w\s:-]+?)(?=Deliver|$)/);
+        if (!collectMatch) {
+            console.warn("Collect match failed for segment:", segment);
+            continue;
+        }
+
+        const material = collectMatch[1];
+        const pickup = collectMatch[2].trim();
+
+        // Extract the "Deliver" part from the same segment or the next one
+        let deliverText = segment;
+        if (!deliverText.includes("Deliver")) {
+            // If "Deliver" is not in this segment, look in the next segment
+            if (i + 1 < segments.length) {
+                deliverText = segments[i + 1];
+                i++; // Skip the next segment since we consumed it
+            } else {
+                console.warn("No Deliver statement found for segment:", segment);
+                continue;
+            }
+        }
+
+        const deliverMatch = deliverText.match(/Deliver \d+\/(\d+) SCU to ([\w\s:-]+)/);
+        console.log("Deliver match for segment:", deliverText, "Result:", deliverMatch);
+        if (!deliverMatch) {
+            console.warn("Deliver match failed for segment:", deliverText);
+            continue;
+        }
+
+        const scu = parseInt(deliverMatch[1], 10);
+        let delivery = deliverMatch[2].trim();
+
+        // Normalize the delivery location using the expected delivery from details
+        if (expectedDelivery && delivery !== expectedDelivery) {
+            console.log(`Normalizing delivery location: ${delivery} -> ${expectedDelivery}`);
+            delivery = expectedDelivery;
+        }
+
         const cargoItem = {
-            material: match[1],
-            pickup: match[2].trim(),
-            scu: parseInt(match[3], 10),
-            delivery: match[4].trim()
+            material: material,
+            pickup: pickup,
+            scu: scu,
+            delivery: delivery
         };
         contractData.cargoItems.push(cargoItem);
         console.log("Parsed cargo item:", cargoItem);
@@ -169,7 +242,7 @@ function parseContractData(extractedData) {
 
     // Debug: Log if no cargo items were parsed
     if (contractData.cargoItems.length === 0) {
-        console.warn("No cargo items were parsed from the cargo text. Check OCR output and regex.");
+        console.warn("No cargo items were parsed from the cargo text. Check OCR output and parsing logic.");
     }
 
     console.log("Parsed contract data:", contractData);
@@ -232,14 +305,25 @@ async function captureAndExtract() {
             contractData.cargoItems.forEach((item, index) => {
                 console.log(`Adding cargo item ${index + 1}:`, item);
                 const cargoItem = {
-                    material: item.material,
+                    name: item.material,
+                    item: item.material,
+                    cargoMaterial: item.material,
                     pickup: item.pickup,
                     delivery: item.delivery,
                     cargo: item.scu,
-                    maxContainer: contractData.maxContainer // Use the parsed maxContainer value
+                    maxContainer: contractData.maxContainer
                 };
                 try {
                     const newItem = ui.createCargoItem(cargoItem);
+                    // Set the material dropdown value
+                    const materialSelect = newItem.querySelector('select.material');
+                    if (materialSelect) {
+                        materialSelect.value = item.material;
+                        console.log(`Set material dropdown to: ${item.material}`);
+                    } else {
+                        console.warn(`Material dropdown not found in cargo item ${index + 1}`);
+                    }
+                    console.log(`HTML structure of cargo item ${index + 1}:`, newItem.outerHTML);
                     cargoItemsDiv.appendChild(newItem);
                     console.log(`Successfully added cargo item ${index + 1} to the form`);
                 } catch (error) {
