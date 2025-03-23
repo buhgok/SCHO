@@ -1,3 +1,4 @@
+console.log("routing.js loaded");
 // Routing module: Calculates and displays routes
 function updateRoute() {
     const routeOutput = document.getElementById("route-output");

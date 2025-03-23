@@ -1,3 +1,4 @@
+console.log("data.js loaded");
 // Data module: Manages static data and localStorage
 const ships = {
     "Hull A": { totalSCU: 64, fuel: 600 },

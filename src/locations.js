@@ -1,3 +1,4 @@
+console.log("locations.js loaded");
 // Locations module: Manages location CRUD and validation
 function validateLocation(loc) {
     const validSystems = ["stanton", "pyro"];

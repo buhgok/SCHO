@@ -1,4 +1,5 @@
-﻿// Contracts module: Manages contract CRUD and logic
+﻿console.log("contracts.js loaded");
+// Contracts module: Manages contract CRUD and logic
 function addContract() {
     const name = document.getElementById("name").value;
     const ship = document.getElementById("ship").value;

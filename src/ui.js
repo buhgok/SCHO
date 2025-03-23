@@ -1,4 +1,5 @@
-﻿// UI module: Handles DOM updates and events
+﻿console.log("ui.js loaded");
+// UI module: Handles DOM updates and events
 function createOption(value) {
     const option = document.createElement("option");
     option.value = value;
