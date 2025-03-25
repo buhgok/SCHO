@@ -57,6 +57,7 @@
                     </div>
                     <button type="button" id="add-cargo">Add Cargo</button>
                     <button type="submit">Add Contract</button>
+                    <button type="button" id="add-test-contracts">Add Test Contracts</button> <!-- New button -->
                 </form>
                 <datalist id="pickup-list"></datalist>
                 <datalist id="delivery-list"></datalist>
@@ -79,6 +80,10 @@
             <div class="tab-card">
                 <div class="route-start">
                     <label>Starting Location: <input type="text" id="start-location" list="pickup-list"></label>
+                    <label for="route-ship">Select Ship for Route:</label>
+                    <select id="route-ship" required>
+                        <option value="">Select Ship</option>
+                    </select>
                     <button type="button" id="calculate-route">Calculate Route</button>
                     <button type="button" id="refresh-materials">Refresh Materials</button>
                 </div>
@@ -128,5 +133,6 @@
             document.getElementById(`${tabId}-tab`).classList.add("active");
         }
     </script>
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'9259337999a0495c',t:'MTc0Mjg1MTEwNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
 </body>
 </html>

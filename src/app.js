@@ -2,6 +2,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     try {
         const shipSelect = document.getElementById("ship");
+        const routeShipSelect = document.getElementById("route-ship");
         const contractForm = document.getElementById("contract-form");
         const locationForm = document.getElementById("location-form");
         const themeToggle = document.getElementById("theme-toggle");
@@ -9,14 +10,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const addCargoButton = document.getElementById("add-cargo");
         const calculateRouteButton = document.getElementById("calculate-route");
         const refreshMaterialsButton = document.getElementById("refresh-materials");
+        const addTestContractsButton = document.getElementById("add-test-contracts"); // New button
 
         // Theme setup
         const savedTheme = localStorage.getItem("theme") || "dark";
         document.body.className = savedTheme;
         themeToggle.textContent = savedTheme === "dark" ? "Light Mode" : "Dark Mode";
 
-        // Populate initial UI
-        Object.keys(data.ships).forEach(ship => shipSelect.appendChild(ui.createOption(ship)));
+        // Populate ship dropdowns
+        Object.keys(data.ships).forEach(ship => {
+            shipSelect.appendChild(ui.createOption(ship));
+            routeShipSelect.appendChild(ui.createOption(ship));
+        });
         ui.updateDatalists();
         ui.updateMaterialDropdown();
         ui.updateContractTable();
@@ -70,6 +75,10 @@ document.addEventListener("DOMContentLoaded", () => {
             data.state.materials = [...data.STATIC_MATERIALS];
             data.saveState();
             ui.updateMaterialDropdown();
+        });
+
+        addTestContractsButton.addEventListener("click", () => {
+            contracts.addTestContracts();
         });
 
         // Initial cargo item remove button
