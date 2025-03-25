@@ -94,9 +94,103 @@ function updateStatus(index, newStatus) {
     ui.updateContractTable();
 }
 
+// Function to add randomized test contracts with cleaned locations
+function addTestContracts() {
+    const materials = data.STATIC_MATERIALS;
+    const locations = data.STATIC_LOCATIONS; // Use static clean list
+    const maxContainerOptions = [1, 2, 4, 8, 16, 32];
+    const testContracts = [];
+
+    // Helper to get random element
+    const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const randSCU = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    // Reset locations to clean state
+    data.state.locations = [...data.STATIC_LOCATIONS];
+    data.saveState();
+
+    // 2 Simple Contracts
+    for (let i = 0; i < 2; i++) {
+        const cargo = randSCU(10, 20);
+        const pickup = rand(locations);
+        let delivery = rand(locations);
+        if (pickup === delivery) delivery = rand(locations.filter(l => l !== pickup)); // Ensure different locations
+        testContracts.push({
+            name: `CONT-S${i + 1}`,
+            ship: "Constellation Taurus",
+            reward: cargo * 500,
+            cargoItems: [{
+                material: rand(materials),
+                pickup: pickup,
+                delivery: delivery,
+                cargo: cargo,
+                maxContainer: rand(maxContainerOptions.filter(m => m <= cargo))
+            }],
+            status: "Pending",
+            completedOnce: false
+        });
+    }
+
+    // 2 Complex Contracts
+    for (let i = 0; i < 2; i++) {
+        const numItems = randSCU(2, 3);
+        const cargoItems = [];
+        let totalSCU = 0;
+        for (let j = 0; j < numItems; j++) {
+            const cargo = randSCU(8, 20);
+            if (totalSCU + cargo > 50) break;
+            const pickup = rand(locations);
+            let delivery = rand(locations);
+            if (pickup === delivery) delivery = rand(locations.filter(l => l !== pickup)); // Ensure different locations
+            cargoItems.push({
+                material: rand(materials),
+                pickup: pickup,
+                delivery: delivery,
+                cargo: cargo,
+                maxContainer: rand(maxContainerOptions.filter(m => m <= cargo))
+            });
+            totalSCU += cargo;
+        }
+        testContracts.push({
+            name: `CONT-C${i + 1}`,
+            ship: "Constellation Taurus",
+            reward: totalSCU * 600,
+            cargoItems,
+            status: "Pending",
+            completedOnce: false
+        });
+    }
+
+    // Validate total cargo
+    const maxPossibleSCU = testContracts.reduce((sum, c) =>
+        sum + c.cargoItems.reduce((s, i) => s + i.cargo, 0), 0);
+    if (maxPossibleSCU > 174) {
+        console.warn(`Total possible SCU (${maxPossibleSCU}) exceeds Taurus capacity (174 SCU). Trimming contracts.`);
+        testContracts.pop();
+    }
+
+    testContracts.forEach(contract => {
+        contract.cargoItems.forEach(item => {
+            if (!data.state.locations.includes(item.pickup)) {
+                if (locations.validateLocation(item.pickup)) locations.addLocation(item.pickup);
+            }
+            if (!data.state.locations.includes(item.delivery)) {
+                if (locations.validateLocation(item.delivery)) locations.addLocation(item.delivery);
+            }
+        });
+        data.state.contracts.push(contract);
+    });
+
+    data.saveState();
+    ui.updateContractTable();
+    ui.updateDatalists();
+    ui.updateLocationTable();
+}
+
 window.contracts = {
     addContract,
     editContract,
     deleteContract,
-    updateStatus
+    updateStatus,
+    addTestContracts
 };
