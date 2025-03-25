@@ -1,11 +1,17 @@
 // Routing module: Calculates and displays routes
 function updateRoute() {
     const routeOutput = document.getElementById("route-output");
-    const startLocation = document.getElementById("start-location").value.trim();
+    let startLocation = document.getElementById("start-location").value.trim();
+    const routeShip = document.getElementById("route-ship").value;
     const activeContracts = data.state.contracts.filter(c => c.status === "Pending" || c.status === "Enroute");
 
+    // Validation
     if (!startLocation) {
         routeOutput.innerHTML = "Please set a starting location.";
+        return;
+    }
+    if (!routeShip) {
+        routeOutput.innerHTML = "Please select a ship for the route.";
         return;
     }
     if (activeContracts.length === 0) {
@@ -13,104 +19,111 @@ function updateRoute() {
         return;
     }
 
-    let cargoTasks = [];
-    activeContracts.forEach(contract => {
-        contract.cargoItems.forEach(item => {
-            cargoTasks.push({
-                pickup: item.pickup,
-                delivery: item.delivery,
-                material: item.material,
-                scu: item.cargo,
-                contract: contract
-            });
-        });
-    });
-
-    let route = [];
-    let currentLocation = startLocation;
+    // Normalize starting location
+    const fullStartLocation = data.state.locations.find(loc => loc.includes(startLocation)) || startLocation;
+    const shipCapacity = data.ships[routeShip].totalSCU;
+    let currentLocation = fullStartLocation;
     let cargoOnBoard = [];
     let visitedPickups = new Set();
-    let totalDistance = 0;
-    let totalFuel = 0;
-    const shipCapacity = data.ships["Constellation Taurus"].totalSCU; // Default ship for now
+    let route = [];
 
-    function getDistance(from, to) {
-        const key1 = `${from}-${to}`;
-        const key2 = `${to}-${from}`;
-        return data.distances[key1] || data.distances[key2] || 100000;
+    function allTasksCompleted() {
+        return activeContracts.every(contract =>
+            contract.cargoItems.every(item =>
+                visitedPickups.has(`${contract.name}-${item.pickup}-${item.material}`) &&
+                !cargoOnBoard.some(c => c.item === item)
+            )
+        );
     }
 
-    while (visitedPickups.size < cargoTasks.length || cargoOnBoard.length > 0) {
+    while (!allTasksCompleted()) {
         let startActions = [];
         let endActions = [];
-        let currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
+        let currentSCU = cargoOnBoard.reduce((sum, c) => sum + c.scu, 0);
+        let startContracts = new Set();
+        let endContracts = new Set();
 
-        const deliveriesHere = cargoOnBoard.filter(t => t.delivery === currentLocation);
-        if (deliveriesHere.length > 0) {
-            startActions.push(...deliveriesHere.map(t => `Deliver ${t.material} (${t.scu} SCU)`));
-            cargoOnBoard = cargoOnBoard.filter(t => t.delivery !== currentLocation);
-            currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
-        }
-
-        const pickupsHere = cargoTasks.filter(t => t.pickup === currentLocation && !visitedPickups.has(t));
-        for (const task of pickupsHere) {
-            if (currentSCU + task.scu <= shipCapacity) {
-                startActions.push(`Pick up ${task.material} (${task.scu} SCU)`);
-                cargoOnBoard.push(task);
-                visitedPickups.add(task);
-                currentSCU += task.scu;
+        // Pick up at current location (start)
+        const pickupsHere = activeContracts.flatMap(contract =>
+            contract.cargoItems
+                .filter(item => item.pickup === currentLocation && !visitedPickups.has(`${contract.name}-${item.pickup}-${item.material}`))
+                .map(item => ({ contract, item }))
+        );
+        for (const { contract, item } of pickupsHere) {
+            if (currentSCU + item.cargo <= shipCapacity) {
+                startActions.push(`Pick up ${item.material} (${item.cargo} SCU)`);
+                cargoOnBoard.push({ contract, item, scu: item.cargo });
+                visitedPickups.add(`${contract.name}-${item.pickup}-${item.material}`);
+                startContracts.add(contract.name);
+                currentSCU += item.cargo;
             }
         }
 
-        const unvisitedPickups = cargoTasks.filter(t => !visitedPickups.has(t)).map(t => t.pickup);
-        const pendingDeliveries = cargoOnBoard.map(t => t.delivery);
-        const nextCandidates = [...new Set([...unvisitedPickups, ...pendingDeliveries])];
+        // Choose next location
+        const deliveryLocations = [...new Set(cargoOnBoard.map(c => c.item.delivery))];
+        const pickupLocations = [...new Set(activeContracts.flatMap(contract =>
+            contract.cargoItems.filter(item => !visitedPickups.has(`${contract.name}-${item.pickup}-${item.material}`)).map(item => item.pickup)
+        ))].filter(loc => {
+            const availablePickups = activeContracts.flatMap(c => c.cargoItems.filter(i => i.pickup === loc && !visitedPickups.has(`${c.name}-${i.pickup}-${i.material}`)));
+            return availablePickups.some(item => currentSCU + item.cargo <= shipCapacity);
+        });
 
-        let nextLocation = currentLocation;
-        if (nextCandidates.length > 0) {
-            nextLocation = nextCandidates.reduce((closest, loc) => {
-                const dist = getDistance(currentLocation, loc);
-                return dist < getDistance(currentLocation, closest) ? loc : closest;
-            }, nextCandidates[0]);
-        } else if (startActions.length === 0) {
-            break;
-        }
+        const allPossibleLocations = [...deliveryLocations, ...pickupLocations];
+        if (allPossibleLocations.length === 0) break;
 
-        const deliveriesNext = cargoOnBoard.filter(t => t.delivery === nextLocation);
-        if (deliveriesNext.length > 0) {
-            endActions.push(...deliveriesNext.map(t => `Deliver ${t.material} (${t.scu} SCU)`));
-            cargoOnBoard = cargoOnBoard.filter(t => t.delivery !== nextLocation);
-            currentSCU = cargoOnBoard.reduce((sum, t) => sum + t.scu, 0);
-        }
-
-        const pickupsNext = cargoTasks.filter(t => t.pickup === nextLocation && !visitedPickups.has(t));
-        for (const task of pickupsNext) {
-            if (currentSCU + task.scu <= shipCapacity) {
-                endActions.push(`Pick up ${task.material} (${task.scu} SCU)`);
-                cargoOnBoard.push(task);
-                visitedPickups.add(task);
-                currentSCU += task.scu;
+        // Calculate scores
+        let scores = allPossibleLocations.map(loc => {
+            if (deliveryLocations.includes(loc)) {
+                const deliveries = cargoOnBoard.filter(c => c.item.delivery === loc).length;
+                return { loc, score: deliveries, type: 'delivery' };
+            } else {
+                const availablePickups = activeContracts.flatMap(c => c.cargoItems.filter(i => i.pickup === loc && !visitedPickups.has(`${c.name}-${i.pickup}-${i.material}`)));
+                let score = 0;
+                for (const item of availablePickups) {
+                    if (currentSCU + item.cargo <= shipCapacity) {
+                        const bonus = cargoOnBoard.filter(c => c.item.delivery === item.delivery).length;
+                        // Boost pickup score when cargo is onboard to encourage holding
+                        score += (cargoOnBoard.length > 0 ? 2 : 1) + bonus;
+                    }
+                }
+                return { loc, score, type: 'pickup' };
             }
+        });
+
+        // Force pickup when empty and pickups are available
+        if (cargoOnBoard.length === 0 && pickupLocations.length > 0) {
+            scores = scores.filter(s => s.type === 'pickup');
         }
 
-        const dist = currentLocation === nextLocation ? 0 : getDistance(currentLocation, nextLocation);
-        if (startActions.length > 0 || endActions.length > 0 || dist > 0) {
-            route.push({
-                start: currentLocation,
-                startAction: startActions.length > 0 ? startActions.join(", ") : "Depart",
-                end: nextLocation,
-                endAction: endActions.length > 0 ? endActions.join(", ") : "Arrive",
-                contract: (deliveriesHere[0] || pickupsHere[0] || deliveriesNext[0] || pickupsNext[0])?.contract?.name || "-",
-                distance: dist,
-                fuel: dist / 1000
+        scores.sort((a, b) => b.score - a.score || (a.type === 'delivery' ? -1 : 1));
+        const nextLocation = scores[0].loc;
+
+        // Deliver at next location (end)
+        const deliveriesThere = cargoOnBoard.filter(c => c.item.delivery === nextLocation);
+        if (deliveriesThere.length > 0) {
+            deliveriesThere.forEach(d => {
+                endActions.push(`Deliver ${d.item.material} (${d.scu} SCU)`);
+                endContracts.add(d.contract.name);
+                cargoOnBoard = cargoOnBoard.filter(c => c !== d);
             });
-            totalDistance += dist;
-            totalFuel += dist / 1000;
+            currentSCU = cargoOnBoard.reduce((sum, c) => sum + c.scu, 0);
         }
+
+        // Record the leg with only deliveries at end
+        route.push({
+            start: currentLocation,
+            startAction: startActions.length > 0 ? startActions.join(", ") : "Depart",
+            end: nextLocation,
+            endAction: endActions.length > 0 ? endActions.join(", ") : "Arrive",
+            contract: (startActions.length > 0 || endActions.length > 0)
+                ? [...startContracts, ...endContracts].join(", ")
+                : "-"
+        });
 
         currentLocation = nextLocation;
     }
 
+    // Generate route table
     let tableHTML = `
         <table id="route-table">
             <thead>
@@ -121,13 +134,10 @@ function updateRoute() {
                     <th>End</th>
                     <th>Action at End</th>
                     <th>Contract</th>
-                    <th>Distance (km)</th>
-                    <th>Fuel Needed</th>
                 </tr>
             </thead>
             <tbody>
     `;
-
     route.forEach((leg, index) => {
         tableHTML += `
             <tr>
@@ -137,17 +147,10 @@ function updateRoute() {
                 <td>${leg.end}</td>
                 <td>${leg.endAction}</td>
                 <td>${leg.contract}</td>
-                <td>${leg.distance}</td>
-                <td>${leg.fuel}</td>
             </tr>
         `;
     });
-
-    tableHTML += `
-            </tbody>
-        </table>
-        <p>Total Distance: ${totalDistance} km | Total Fuel: ${totalFuel}</p>
-    `;
+    tableHTML += `</tbody></table>`;
     routeOutput.innerHTML = tableHTML;
 }
 
