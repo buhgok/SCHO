@@ -25,7 +25,7 @@ const STATIC_MATERIALS = [
     "Waste", "Scrap", "Recycled Material Composite",
     "Agricultural Supplies", "Distilled Spirits", "Fresh Food", "Processed Food",
     "Medical Supplies", "Stims", "SLAM", "WiDoW",
-    "Construction Materials", "Souvenirs", "Steel"
+    "Construction Materials", "Souvenirs", "Steel", "Pressurized Ice"
 ];
 
 const state = {
@@ -35,7 +35,7 @@ const state = {
         "Stanton: ARC-L1 Wide Forest Station", "Stanton: ARC-L2 Lively Pathway Station", "Stanton: ARC-L5 Yellow Core Station",
         "Stanton: Baijini Point", "Stanton: Covalex Distribution Center (S4DC05)", "Stanton: CRU-L1 Ambitious Dream Station",
         "Stanton: CRU-L4 Shallow Fields Station", "Stanton: Devlin Scrap & Salvage", "Stanton: Everus Harbor",
-        "Stanton: Greycat Stanton IV Production Complex-A", "Stanton: HUR-L2 Faithful Dream Station",
+        "Stanton: Greycat Stanton IV Production Complex-A", "Stanton: HUR-L2 Faithful Dream Station", "HUR-L1 Green Glade Station",
         "Stanton: MIC-L1 Shallow Frontier Station", "Stanton: MIC-L2 Long Forest Station", "Stanton: MIC-L4 Red Crossroads Station",
         "Stanton: microTech Logistics Depot (S4LD13)", "Stanton: NB Int. Spaceport", "Stanton: Port Tressler",
         "Stanton: Pyro Gateway", "Stanton: Rayari Anvik Research Outpost", "Stanton: Rayari Cantwell Research Outpost",
