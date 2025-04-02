@@ -20,7 +20,7 @@ const distances = {
 };
 
 const STATIC_MATERIALS = [
-    "Agricium", "Aluminum", "Astatine", "Bexalite", "Copper", "Corundum", "Diamond", "Gold", "Iron", "Quantanium", "Titanium", "Tungsten",
+    "Agricium", "Aluminum", "Astatine", "Bexalite", "Copper", "Corundum", "Diamond", "Gold", "Iron", "Quantanium", "Titanium", "Tungsten", "Quartz",
     "Chlorine", "Fluorine", "Helium", "Hydrogen", "Iodine", "Nitrogen",
     "Waste", "Scrap", "Recycled Material Composite",
     "Agricultural Supplies", "Distilled Spirits", "Fresh Food", "Processed Food",

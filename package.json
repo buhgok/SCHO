@@ -1,0 +1,30 @@
+{
+  "name": "scho",
+  "version": "1.0.0",
+  "description": "A web-based tool to optimize cargo routes for Star Citizen haulers, built with HTML, CSS, and JavaScript.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/buhgok/SCHO.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/buhgok/SCHO/issues"
+  },
+  "homepage": "https://github.com/buhgok/SCHO#readme",
+  "dependencies": {
+    "express": "^4.21.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "eslint": "^9.23.0"
+  }
+}
